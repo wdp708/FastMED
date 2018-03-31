@@ -1,3 +1,6 @@
+/*
+ * generate MED points.
+ */
 #include <Rcpp.h>
 #include <math.h>
 #include <unordered_set>
