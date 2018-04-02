@@ -26,12 +26,17 @@ NumericMatrix chooseMED(NumericMatrix Cand, // candidate points
                         double gamma, //
                         double s)
 {
-  int N(Cand.nrow());
-  int MaxLfIndex(0);
-  MatrixXd m_MED(n, Cand.ncol());
-  MaxLfIndex = argMax(lfCand);
+  int N(Cand.nrow());// number of candidate list
+  int MaxLfIndex(0); // the index of maximum
+  MatrixXd m_MED(n, Cand.ncol()); // MED points
   MapMatd m_SigmaK(as<MapMatd> (SigmaK));
   MatrixXd SigmaInv = m_SigmaK.inverse();
+  NumericVector current_point;
+
+  // find out the first MED point which with maximum logarithm function value
+  MaxLfIndex = argMax(lfCand);
+  current_point = Cand(MaxlfIndex, _);
+  m_MED.row(0) = as<MapVectd> (current_point);
 
   return NumericMatrix(wrap(m_MED));
 }

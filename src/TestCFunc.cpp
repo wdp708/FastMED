@@ -20,13 +20,35 @@ NumericVector test_getLogDistVector(NumericMatrix& x, NumericVector& y, double s
   return getLogDistVector(x, y, s);
 }
 
+// [[Rcpp::export]]
+int testAssign(NumericMatrix& x, NumericMatrix& y)
+{
+  cout<<x<<endl;
+  cout<<y<<endl;
+  x(_, 1) = y(_, 1);
+  x(_, 1) = y(_, 2);
+  cout<<x<<endl;
+  cout<<y<<endl;
+  MatrixXd m_test(x.nrow(), x.ncol());
+  NumericVector tempRow;
+  tempRow = x(_, 1);
+  m_test.col(1) = as<MapVectd> (tempRow);
+  tempRow = y(_, 1);
+  m_test.col(1) = as<MapVectd> (tempRow);
+  cout<<m_test<<endl;
+  return 0;
+}
+
 /***R
 # x <- c(1, 2, 3)
 # y <- c(4, 5, 6)
 # test_getLogDist(x, y, 0)
 # x <- matrix(c(7, 10, 15, 22), nrow = 2, ncol = 2)
 # x %*% testInverse(x)
+# x <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9), nrow = 3, ncol = 3, byrow = T)
+# y <- c(4, 5, 6)
+# test_getLogDistVector(x, y, 1)
 x <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9), nrow = 3, ncol = 3, byrow = T)
-y <- c(4, 5, 6)
-test_getLogDistVector(x, y, 1)
+y <- matrix(c(1, 2, 3, 4, 3, 6, 0, 6, 9), nrow = 3, ncol = 3, byrow = T)
+testAssign(x, y)
 */

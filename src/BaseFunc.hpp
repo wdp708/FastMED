@@ -8,6 +8,7 @@ using namespace RcppEigen;
 using namespace Eigen;
 using namespace std;
 typedef Eigen::Map<Eigen::MatrixXd> MapMatd;
+typedef Eigen::Map<Eigen::VectorXd> MapVectd;
 // [[Rcpp::plugins(cpp11)]]
 
 
