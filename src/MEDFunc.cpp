@@ -33,6 +33,7 @@ NumericMatrix chooseMED(NumericMatrix Cand, // candidate points
   MatrixXd SigmaInv = m_SigmaK.inverse();
   NumericVector current_point;
   NumericVector currentCriterion(N, 0.0);
+  NumericVector minCriterion(N, 1e16);
   double current_lf(0.0);
 
   // find out the first MED point which with maximum logarithm function value
@@ -50,7 +51,20 @@ NumericMatrix chooseMED(NumericMatrix Cand, // candidate points
   {
     currentCriterion = 0.5 * gamma * (lfCand + current_lf) + Cand.ncol() *
       getLogDistVector(transCand, transCurrentPoint, s);
-
+    minCriterion = compareMin(minCriterion, currentCriterion);
+    MaxLfIndex = argMax(minCriterion);
+    current_point = Cand(MaxLfIndex, _);
+    current_lf = lfCand[MaxLfIndex];
+    m_MED.row(i) = as<MapVectd> (current_point);
+    transCurrentPoint = transVector(SigmaInv, current_point);
   }
   return NumericMatrix(wrap(m_MED));
 }
+
+/***R
+Cand <- matrix(rnorm(500), ncol = 1)
+lfCand <- log(dnorm(Cand))
+SigmaK <- matrix(c(1))
+y <- chooseMED(Cand, lfCand, 2, SigmaK, 1.0, 2.0)
+hist(y)
+*/

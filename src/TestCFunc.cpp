@@ -51,6 +51,19 @@ NumericVector test_transVector(MatrixXd& x, NumericVector& y)
 {
   return transVector(x, y);
 }
+
+// [[Rcpp::export]]
+NumericVector test_rowMin(NumericMatrix& x)
+{
+  return rowMin(x);
+}
+
+// [[Rcpp::export]]
+NumericVector test_compareMin(NumericVector& x, NumericVector& y)
+{
+  return compareMin(x, y);
+}
+
 /***R
 # x <- c(1, 2, 3)
 # y <- c(4, 5, 6)
@@ -63,8 +76,11 @@ NumericVector test_transVector(MatrixXd& x, NumericVector& y)
 # x <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9), nrow = 3, ncol = 3, byrow = T)
 # y <- matrix(c(1, 2, 3, 4, 3, 6, 0, 6, 9), nrow = 3, ncol = 3, byrow = T)
 # testAssign(x, y)
+# x <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9), nrow = 3, ncol = 3, byrow = T)
+# y <- matrix(c(1, 2, 3, 4, 3, 6, 0, 6, 9), nrow = 3, ncol = 3, byrow = T)
+# test_transMatrix(x, y)
+# test_transVector(x, y[1,])
 x <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9), nrow = 3, ncol = 3, byrow = T)
-y <- matrix(c(1, 2, 3, 4, 3, 6, 0, 6, 9), nrow = 3, ncol = 3, byrow = T)
-test_transMatrix(x, y)
-test_transVector(x, y[1,])
+test_rowMin(x)
+test_compareMin(x[1, ], x[2, ])
 */

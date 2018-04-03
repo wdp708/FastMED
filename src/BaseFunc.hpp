@@ -115,3 +115,25 @@ NumericVector transVector(MatrixXd& SigmaMatrix, NumericVector& x)
   res = tempX.transpose() * SigmaMatrix;
   return wrap(res);
 }
+
+// [[Rcpp::export]]
+NumericVector rowMin(NumericMatrix& x)
+{
+  NumericVector res(x.nrow());
+  for(int i = 0; i < x.ncol(); i++)
+  {
+    res[i] = min(x(i, _));
+  }
+  return res;
+}
+
+// [[Rcpp::export]]
+NumericVector compareMin(NumericVector& x, NumericVector& y)
+{
+  NumericVector res(x.size());
+  for(int i = 0; i < x.size(); i++)
+  {
+    res[i] = minTwo(x[i], y[i]);
+  }
+  return res;
+}
