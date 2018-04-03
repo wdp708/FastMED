@@ -39,6 +39,18 @@ int testAssign(NumericMatrix& x, NumericMatrix& y)
   return 0;
 }
 
+// [[Rcpp::export]]
+NumericMatrix test_transMatrix(MatrixXd& x, NumericMatrix& y)
+{
+  return transMatrix(x, y);
+}
+
+
+// [[Rcpp::export]]
+NumericVector test_transVector(MatrixXd& x, NumericVector& y)
+{
+  return transVector(x, y);
+}
 /***R
 # x <- c(1, 2, 3)
 # y <- c(4, 5, 6)
@@ -48,7 +60,11 @@ int testAssign(NumericMatrix& x, NumericMatrix& y)
 # x <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9), nrow = 3, ncol = 3, byrow = T)
 # y <- c(4, 5, 6)
 # test_getLogDistVector(x, y, 1)
+# x <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9), nrow = 3, ncol = 3, byrow = T)
+# y <- matrix(c(1, 2, 3, 4, 3, 6, 0, 6, 9), nrow = 3, ncol = 3, byrow = T)
+# testAssign(x, y)
 x <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9), nrow = 3, ncol = 3, byrow = T)
 y <- matrix(c(1, 2, 3, 4, 3, 6, 0, 6, 9), nrow = 3, ncol = 3, byrow = T)
-testAssign(x, y)
+test_transMatrix(x, y)
+test_transVector(x, y[1,])
 */

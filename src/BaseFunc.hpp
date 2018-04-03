@@ -97,3 +97,21 @@ NumericVector getLogDistVector(NumericMatrix& x, NumericVector& y, double s)
     return res;
   }
 }
+
+// [[Rcpp::export]]
+NumericMatrix transMatrix(MatrixXd& SigmaMatrix, NumericMatrix& x)
+{
+  MapMatd tempX(as<MapMatd> (x));
+  MatrixXd res(x.nrow(), x.ncol());
+  res = tempX * SigmaMatrix;
+  return wrap(res);
+}
+
+// [[Rcpp::export]]
+NumericVector transVector(MatrixXd& SigmaMatrix, NumericVector& x)
+{
+  MapMatd tempX(as<MapMatd> (x));
+  VectorXd res(x.size());
+  res = tempX.transpose() * SigmaMatrix;
+  return wrap(res);
+}

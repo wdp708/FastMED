@@ -32,11 +32,25 @@ NumericMatrix chooseMED(NumericMatrix Cand, // candidate points
   MapMatd m_SigmaK(as<MapMatd> (SigmaK));
   MatrixXd SigmaInv = m_SigmaK.inverse();
   NumericVector current_point;
+  NumericVector currentCriterion(N, 0.0);
+  double current_lf(0.0);
 
   // find out the first MED point which with maximum logarithm function value
   MaxLfIndex = argMax(lfCand);
-  current_point = Cand(MaxlfIndex, _);
+  current_point = Cand(MaxLfIndex, _);
+  current_lf = lfCand[MaxLfIndex];
   m_MED.row(0) = as<MapVectd> (current_point);
 
+  // search sequential MED points using criterion
+  NumericMatrix transCand = transMatrix(SigmaInv, Cand);
+  NumericVector transCurrentPoint = transVector(SigmaInv, current_point);
+  NumericMatrix MEDCriterion(N, n); // define the criterion matrix
+  std::fill(MEDCriterion.begin(), MEDCriterion.end(), 1e16); // fill with large enough number
+  for(int i = 1; i < n; i++)
+  {
+    currentCriterion = 0.5 * gamma * (lfCand + current_lf) + Cand.ncol() *
+      getLogDistVector(transCand, transCurrentPoint, s);
+
+  }
   return NumericMatrix(wrap(m_MED));
 }
