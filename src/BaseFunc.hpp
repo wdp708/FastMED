@@ -15,6 +15,10 @@ typedef Eigen::Map<Eigen::VectorXd> MapVectd;
 #define minTwo(a, b) (a<b? a:b)
 #define MaxTwo(a, b) (a>b? a:b)
 
+
+/*
+ * an alternative function is sugar::cumprod
+ */
 // [[Rcpp::export]]
 NumericVector cumprodC(NumericVector& x)
 {
@@ -28,12 +32,18 @@ NumericVector cumprodC(NumericVector& x)
   return res;
 }
 
+/*
+ * an alternative functin is sugar::which_min
+ */
 // [[Rcpp::export]]
 int argMin(NumericVector& x)
 {
   return std::min_element(x.begin(), x.end()) - x.begin();
 }
 
+/*
+ * an alternative function is sugar::which_max
+ */
 // [[Rcpp::export]]
 int argMax(NumericVector& x)
 {
@@ -116,6 +126,9 @@ NumericVector transVector(MatrixXd& SigmaMatrix, NumericVector& x)
   return wrap(res);
 }
 
+/*
+ * return the minimum value of each row
+ */
 // [[Rcpp::export]]
 NumericVector rowMin(NumericMatrix& x)
 {
@@ -127,6 +140,9 @@ NumericVector rowMin(NumericMatrix& x)
   return res;
 }
 
+/*
+ * return the element-wise minimum values between two vectors
+ */
 // [[Rcpp::export]]
 NumericVector compareMin(NumericVector& x, NumericVector& y)
 {
@@ -134,6 +150,94 @@ NumericVector compareMin(NumericVector& x, NumericVector& y)
   for(int i = 0; i < x.size(); i++)
   {
     res[i] = minTwo(x[i], y[i]);
+  }
+  return res;
+}
+
+
+/*
+ * bind a vector to matrix by column.
+ * an alternative function is sugar::cbind
+ */
+NumericMatrix cbindV(NumericMatrix& x, NumericVector& y)
+{
+  NumericMatrix res(x.nrow(), x.ncol() + 1);
+  for(int i = 0; i < x.ncol(); i++)
+  {
+    res(_, i) = x(_, i);
+  }
+  res(_, x.ncol()) = y;
+  return res;
+}
+
+NumericMatrix rbindV(NumericMatrix& x, NumericVector& y)
+{
+  NumericMatrix res(x.nrow() + 1, x.ncol());
+  for(int i = 0; i < x.nrow(); i++)
+  {
+    res(i, _) = x(i, _);
+  }
+  res(x.nrow(), _) = y;
+  return res;
+}
+
+/*
+ * compute the pair-wise distance between two observations.
+ */
+NumericMatrix fastpdist(NumericMatrix& X, NumericMatrix& Y)
+{
+  int n(X.nrow()), m(Y.nrow()), k(Y.ncol());
+  NumericMatrix tempX = NumericMatrix(n, k, (X * X).begin());
+  NumericMatrix tempY = NumericMatrix(m, k, (Y * Y).begin());
+  NumericVector Xn = rowSums(tempX);
+  NumericVector Yn = rowSums(tempY);
+  MatrixXd C = as<MapMatd> (X) * as<MapMatd> (Y).transpose();
+  NumericMatrix Cn = wrap(-2.0 * C);
+  for(int i = 0; i < k; i++)
+  {
+    Cn(_, i) = Cn(_, i) + Xn;
+  }
+  for(int i = 0; i < n; i++)
+  {
+    Cn(i, _) = Cn(i, _) + Yn;
+  }
+  return NumericMatrix(n, m, sqrt(Cn).begin());
+}
+
+
+/*
+ * erase a row from one matrix
+ */
+NumericMatrix rowErase(NumericMatrix& x, int rowID)
+{
+  NumericMatrix res(x.nrow() - 1, x.ncol());
+  int iter(0);
+  for(int i = 0; i < x.nrow(); i++)
+  {
+    if(i != rowID)
+    {
+      res.row(iter) = x.row(i);
+      iter++;
+    }
+  }
+  return res;
+}
+
+
+/*
+ * erase a column from one matrix
+ */
+NumericMatrix colErase(NumericMatrix& x, int colID)
+{
+  NumericMatrix res(x.nrow(), x.ncol() - 1);
+  int iter(0);
+  for(int i = 0; i < x.ncol(); i++)
+  {
+    if(i != colID)
+    {
+      res.column(iter) = x.column(i);
+      iter++;
+    }
   }
   return res;
 }

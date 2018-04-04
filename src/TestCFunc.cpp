@@ -1,6 +1,5 @@
 #include "BaseFunc.hpp"
 
-
 // [[Rcpp::export]]
 double test_getLogDist(NumericVector& x, NumericVector& y, double s)
 {
@@ -64,6 +63,38 @@ NumericVector test_compareMin(NumericVector& x, NumericVector& y)
   return compareMin(x, y);
 }
 
+// [[Rcpp::export]]
+NumericMatrix test_cbindV(NumericMatrix& x, NumericVector& y)
+{
+  return cbindV(x, y);
+}
+
+// [[Rcpp::export]]
+NumericVector test_sum(NumericMatrix& x)
+{
+  return rowSums(x);
+}
+
+// [[Rcpp::export]]
+NumericMatrix test_pdist(NumericMatrix& x, NumericMatrix& y)
+{
+  return fastpdist(x, y);
+}
+
+
+// [[Rcpp::export]]
+NumericMatrix test_rowErase(NumericMatrix& x, int rowID)
+{
+  x = rowErase(x, rowID);
+  return x;
+}
+
+// [[Rcpp::export]]
+NumericMatrix test_colErase(NumericMatrix& x, int colID)
+{
+  return colErase(x, colID);
+}
+
 /***R
 # x <- c(1, 2, 3)
 # y <- c(4, 5, 6)
@@ -80,7 +111,19 @@ NumericVector test_compareMin(NumericVector& x, NumericVector& y)
 # y <- matrix(c(1, 2, 3, 4, 3, 6, 0, 6, 9), nrow = 3, ncol = 3, byrow = T)
 # test_transMatrix(x, y)
 # test_transVector(x, y[1,])
+# x <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9), nrow = 3, ncol = 3, byrow = T)
+# test_rowMin(x)
+# test_compareMin(x[1, ], x[2, ])
+
+# x <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9), nrow = 3, ncol = 3, byrow = T)
+# y <- c(10, 15, 11)
+# z <- test_cbindV(x, y)
+# y <- c(1, -100, -50)
+# print(z)
+# print(y)
 x <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9), nrow = 3, ncol = 3, byrow = T)
-test_rowMin(x)
-test_compareMin(x[1, ], x[2, ])
+y <- matrix(c(1, 2, 3, 4, 3, 6, 0, 6, 9), nrow = 3, ncol = 3, byrow = T)
+test_pdist(x, y)
+test_rowErase(x, 0)
+test_colErase(test_rowErase(x, 0), 0)
 */

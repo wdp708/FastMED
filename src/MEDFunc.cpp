@@ -19,7 +19,7 @@ typedef Eigen::Map<Eigen::MatrixXd> MapMatd;
  * Choose $n$ MED points from candidates
  */
 // [[Rcpp::export]]
-NumericMatrix chooseMED(NumericMatrix Cand, // candidate points
+List chooseMED(NumericMatrix Cand, // candidate points
                         NumericVector lfCand, // logarithms of candidate points
                         int n, // the number of MED points
                         NumericMatrix SigmaK, // Covariance matrix of candidate points
@@ -29,6 +29,7 @@ NumericMatrix chooseMED(NumericMatrix Cand, // candidate points
   int N(Cand.nrow());// number of candidate list
   int MaxLfIndex(0); // the index of maximum
   MatrixXd m_MED(n, Cand.ncol()); // MED points
+  NumericVector lfVector(n);
   MapMatd m_SigmaK(as<MapMatd> (SigmaK));
   MatrixXd SigmaInv = m_SigmaK.inverse();
   NumericVector current_point;
@@ -41,6 +42,7 @@ NumericMatrix chooseMED(NumericMatrix Cand, // candidate points
   current_point = Cand(MaxLfIndex, _);
   current_lf = lfCand[MaxLfIndex];
   m_MED.row(0) = as<MapVectd> (current_point);
+  lfVector[0] = current_lf;
 
   // search sequential MED points using criterion
   NumericMatrix transCand = transMatrix(SigmaInv, Cand);
@@ -55,16 +57,45 @@ NumericMatrix chooseMED(NumericMatrix Cand, // candidate points
     MaxLfIndex = argMax(minCriterion);
     current_point = Cand(MaxLfIndex, _);
     current_lf = lfCand[MaxLfIndex];
+    lfVector[i] = current_lf;
     m_MED.row(i) = as<MapVectd> (current_point);
     transCurrentPoint = transVector(SigmaInv, current_point);
   }
-  return NumericMatrix(wrap(m_MED));
+  return List::create(_["Design"] = wrap(m_MED), _["lfVector"] = lfVector);
 }
+
+
+/*
+ * Augment the candidate points.
+ */
+// [[Rcpp::expoer]]
+NumericMatrix augCandidate(NumericMatrix& AugMatrix, NumericMatrix& ExistMatrix)
+{
+  int N1(AugMatrix.nrow());
+  int N2(ExistMatrix.nrow());
+  NumericMatrix DistMat = fastpdist(AugMatrix, ExistMatrix);
+  NumericMatrix DistAug = fastpdist(AugMatrix, AugMatrix);
+  NumericMatrix res(round(N1 / 2.0), AugMatrix.ncol());
+  int MaxIndex(0);
+  for(int i = 0; i < round(N1 / 2.0); i++)
+  {
+    MaxIndex = which_max(rowMin(DistMat));
+    res(i, _) = AugMatrix(MaxIndex, _);
+    AugMatrix = rowErase(AugMatrix, MaxIndex);
+    DistMat = rowErase(DistMat, MaxIndex);
+    NumericVector DistV = rowErase(DistAug, MaxIndex)(_, MaxIndex);
+    DistAug = rowErase(DistAug, MaxIndex);
+    DistAug = colErase(DistAug, MaxIndex);
+    DistMat = cbind(DistMat, DistV);
+  }
+  return res;
+}
+
 
 /***R
 Cand <- matrix(rnorm(500), ncol = 1)
 lfCand <- log(dnorm(Cand))
 SigmaK <- matrix(c(1))
-y <- chooseMED(Cand, lfCand, 2, SigmaK, 1.0, 2.0)
-hist(y)
+y <- chooseMED(Cand, lfCand, 50, SigmaK, 1.0, 2.0)
+hist(y$Design)
 */
