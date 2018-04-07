@@ -1,6 +1,9 @@
+#ifndef FASTLATTICE__
+#define FASTLATTICE__
+
 /*
- * Generate scalar rank-1 lattice rules using fast algorithm.
- */
+  * Generate scalar rank-1 lattice rules using fast algorithm.
+  */
 #include <Rcpp.h>
 #include <math.h>
 #include <unordered_set>
@@ -61,17 +64,7 @@ int POWMOD(int x, int a, int n)
   return y;
 }
 
-// [[Rcpp::export]]
-bool isPrime(int n)
-{
-  if(n <= 1) return false;
-  if(n <= 3) return true;
-  if (n%2 == 0 || n%3 == 0) return false;
-  for (int i=5; i*i<=n; i=i+6)
-    if (n%i == 0 || n%(i+2) == 0)
-      return false;
-  return true;
-}
+
 int findPrimefactors(unordered_set<int> &s, int n)
 {
   while(n%2 == 0)
@@ -197,7 +190,7 @@ NumericMatrix generateLattice(int n, int p){
     }
     z[s-1] = perm[min_index];
     e2[s-1] = -cumbeta[s-1] +(beta[s-1] * (q0 + 2 * sum(q)) + gamma[s-1]
-                            * (psi0 * q0 + 2 * min_E2)) / n;
+                                * (psi0 * q0 + 2 * min_E2)) / n;
     temp_index = min_index;
     for(int i = 0; i <= min_index; i++)
     {
@@ -233,19 +226,5 @@ NumericMatrix generateLattice(int n, int p){
   // return res;
 }
 
+#endif
 
-
-/***R
-
-# x <- 1:4
-# fft(x)
-# Re(FFT(x))
-# IFFT(FFT(x)) / length(x)
-# POWMOD(2, 3, 10)
-# isPrime(10)
-# findFactorize(511)
-# generateOrp(11)
-# cumprodC(c(1.0, 2.0, 1.0))
-# argMin(c(2.0, 1.5, 2.5, 3.5))
-generateLattice(11, 2)
-*/

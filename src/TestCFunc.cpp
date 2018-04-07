@@ -95,6 +95,43 @@ NumericMatrix test_colErase(NumericMatrix& x, int colID)
   return colErase(x, colID);
 }
 
+// [[Rcpp::export]]
+int test_reportMaxPrime(int n)
+{
+  return reportMaxPrime(n);
+}
+
+// [[Rcpp::export]]
+NumericMatrix test_varCPP(NumericMatrix& x)
+{
+  return varCPP(x);
+}
+
+// [[Rcpp::export]]
+NumericMatrix test_sqrtVarMatrix(NumericMatrix& x)
+{
+  return sqrtVarMatrix(x);
+}
+
+
+// [[Rcpp::export]]
+NumericVector test_quantileCPP(NumericVector& x, NumericVector& q)
+{
+  return quantileCPP(x, q);
+}
+
+// [[Rcpp::export]]
+NumericVector test_sampleCPP(int dim)
+{
+  return sampleCPP(dim);
+}
+
+// [[Rcpp::export]]
+NumericMatrix test_subMatrixCols(NumericMatrix& x, NumericVector& cols)
+{
+  return subMatrixCols(x, cols);
+}
+
 /***R
 # x <- c(1, 2, 3)
 # y <- c(4, 5, 6)
@@ -121,9 +158,17 @@ NumericMatrix test_colErase(NumericMatrix& x, int colID)
 # y <- c(1, -100, -50)
 # print(z)
 # print(y)
-x <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9), nrow = 3, ncol = 3, byrow = T)
-y <- matrix(c(1, 2, 3, 4, 3, 6, 0, 6, 9), nrow = 3, ncol = 3, byrow = T)
-test_pdist(x, y)
-test_rowErase(x, 0)
-test_colErase(test_rowErase(x, 0), 0)
+# x <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9), nrow = 3, ncol = 3, byrow = T)
+# y <- matrix(c(1, 2, 3, 4, 3, 6, 0, 6, 9), nrow = 3, ncol = 3, byrow = T)
+# test_pdist(x, y)
+# test_rowErase(x, 0)
+# test_colErase(test_rowErase(x, 0), 0)
+# test_reportMaxPrime(110)
+
+# x <- MaxPro::MaxProLHD(20, 2)$Design
+# varMatrix <- test_varCPP(x)
+# test_sqrtVarMatrix(varMatrix)
+# eig <- eigen(varMatrix)
+# sqrtSinv <- eig$vec%*%diag(1/sqrt(eig$val))%*%t(eig$vectors)
+# print(sqrtSinv)
 */

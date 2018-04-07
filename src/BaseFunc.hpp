@@ -1,3 +1,7 @@
+#ifndef BASEFUNC__
+#define BASEFUNC__
+
+
 #include <Rcpp.h>
 #include <math.h>
 #include <unordered_set>
@@ -73,7 +77,7 @@ double getLogDist(NumericVector& x, NumericVector& y, double s)
     else
     {
       NumericVector temp = log(abs(x - y));
-      res = 1.0  / n * accumulate(temp.begin(), temp.end(), 1.0, multiplies<double>());
+      res = 1.0  / n * accumulate(temp.begin(), temp.end(), 0.0);
     }
     return res;
   }catch(const char* e)
@@ -121,9 +125,8 @@ NumericMatrix transMatrix(MatrixXd& SigmaMatrix, NumericMatrix& x)
 NumericVector transVector(MatrixXd& SigmaMatrix, NumericVector& x)
 {
   MapMatd tempX(as<MapMatd> (x));
-  VectorXd res(x.size());
-  res = tempX.transpose() * SigmaMatrix;
-  return wrap(res);
+  MatrixXd res = tempX.transpose() * SigmaMatrix;
+  return wrap(res.row(0));
 }
 
 /*
@@ -241,3 +244,90 @@ NumericMatrix colErase(NumericMatrix& x, int colID)
   }
   return res;
 }
+
+
+// [[Rcpp::export]]
+bool isPrime(int n)
+{
+  if(n <= 1) return false;
+  if(n <= 3) return true;
+  if (n%2 == 0 || n%3 == 0) return false;
+  for (int i=5; i*i<=n; i=i+6)
+    if (n%i == 0 || n%(i+2) == 0)
+      return false;
+    return true;
+}
+
+int reportMaxPrime(int n)
+{
+  int MaxPrime(0);
+  for(int i = 0; i <= n; i++)
+  {
+    if(isPrime(i))
+    {
+      MaxPrime = MaxTwo(MaxPrime, i);
+    }
+  }
+  return MaxPrime;
+}
+
+
+NumericMatrix varCPP(NumericMatrix& x)
+{
+  NumericVector Means = colMeans(x);
+  NumericMatrix tempXx(clone(x));
+  for(int i = 0; i < x.nrow(); i++)
+  {
+    tempXx(i, _) = tempXx(i, _) - Means;
+  }
+  MapMatd tempX(as<MapMatd> (tempXx));
+  return wrap((tempX.transpose() * tempX) / (x.nrow() - 1.0));
+}
+
+
+NumericMatrix sqrtVarMatrix(NumericMatrix& x)
+{
+  MapMatd tempX(as<MapMatd> (x));
+  SelfAdjointEigenSolver<MatrixXd> res(tempX);
+  // VectorXd eigenvalues = res.eigenvalues();
+  // MatrixXd eigenvectors = res.eigenvectors();
+  VectorXd eigenvalues = res.eigenvalues();
+  for(int i = 0; i < eigenvalues.size(); i++)
+  {
+    eigenvalues[i] = 1.0 / sqrt(eigenvalues[i]);
+  }
+  return wrap(res.eigenvectors() * eigenvalues.asDiagonal()  * res.eigenvectors().transpose());
+}
+
+
+NumericVector quantileCPP(NumericVector& x, NumericVector& q)
+{
+  // NumericVector y(clone(x));
+  // std::sort(y.begin(), y.end());
+  // return y[floor(x.size() * (q))];
+  Environment stats("package:stats");
+  Function quantile = stats["quantile"];
+  int npr = q.size();
+  NumericVector ans(npr);
+  ans = quantile(x, q);
+  return ans;
+}
+
+NumericVector sampleCPP(int dim)
+{
+  Environment stats("package:base");
+  Function sample = stats["sample"];
+  return sample(dim);
+}
+
+NumericMatrix subMatrixCols(NumericMatrix& x, NumericVector& cols)
+{
+  NumericMatrix res(x.nrow(), cols.size());
+  for(int i = 0; i < cols.size(); i++)
+  {
+    res(_, i) = x(_, cols[i]);
+  }
+  return res;
+}
+
+#endif
