@@ -196,7 +196,7 @@ NumericMatrix fastpdist(NumericMatrix& X, NumericMatrix& Y)
   NumericVector Yn = rowSums(tempY);
   MatrixXd C = as<MapMatd> (X) * as<MapMatd> (Y).transpose();
   NumericMatrix Cn = wrap(-2.0 * C);
-  for(int i = 0; i < k; i++)
+  for(int i = 0; i < m; i++)
   {
     Cn(_, i) = Cn(_, i) + Xn;
   }
@@ -329,5 +329,14 @@ NumericMatrix subMatrixCols(NumericMatrix& x, NumericVector& cols)
   }
   return res;
 }
+
+IntegerVector orderCPP(NumericVector x) {
+  if (is_true(any(duplicated(x)))) {
+    Rf_warning("There are duplicates in 'x'; order not guaranteed to match that of R's base::order");
+  }
+  NumericVector sorted = clone(x).sort();
+  return match(sorted, x);
+}
+
 
 #endif

@@ -117,7 +117,11 @@ List generateMEDPoints(int dim, NumericMatrix ExploreDesign, Function logFunc)
   NumericVector q = NumericVector::create(0.9, 0.1);
   NumericVector q_vector(q.size());
   NumericVector lfD(m_MED[1]);
+  NumericMatrix MEDesign = m_MED[0];
   NumericVector perIndex(dim);
+  NumericMatrix pairwiseDist(DesignSize, DesignSize);
+  NumericVector DistRowMin(DesignSize);
+  NumericVector RadiusVect(DesignSize);
   for(int loop_k = 2; loop_k <= K; loop_k++)
   {
     gamma = (loop_k - 1.0) / (K - 1.0);
@@ -126,11 +130,24 @@ List generateMEDPoints(int dim, NumericMatrix ExploreDesign, Function logFunc)
     s = round(2.0 * (1.0 - exp(-gamma * (q_vector[0] - q_vector[1]))));
     perIndex = sampleCPP(dim) - 1;
     ExploreDesign = subMatrixCols(ExploreDesign, perIndex);
-
+    // compute the pairwise distance between MED points.
+    pairwiseDist = fastpdist(MEDesign, MEDesign);
+    pairwiseDist.fill_diag(10 * dim);
+    DistRowMin = rowMin(pairwiseDist);
+    for(int i = 0; i < DesignSize; i++)
+    {
+      RadiusVect[i] = pairwiseDist(i, orderCPP(pairwiseDist(i, _))[1] - 1);
+    }
+    // loop for adding MED
+    for(int j = 0; j < DesignSize; j++)
+    {
+      //TODO:
+    }
   }
 
 
-  return m_MED;
+  return List::create(_["Design"]=MEDesign, _["LfuncVec"]=lfD, _["PairWiseDist"]=pairwiseDist,
+                      _["Radius"]=RadiusVect);
   //return List::create(_["Design"]=InitialDesign, _["LfuncVec"]=LfVector);
 }
 

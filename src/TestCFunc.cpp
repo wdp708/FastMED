@@ -132,6 +132,12 @@ NumericMatrix test_subMatrixCols(NumericMatrix& x, NumericVector& cols)
   return subMatrixCols(x, cols);
 }
 
+// [[Rcpp::export]]
+IntegerVector test_orderCPP(NumericVector x)
+{
+  return orderCPP(x);
+}
+
 /***R
 # x <- c(1, 2, 3)
 # y <- c(4, 5, 6)
