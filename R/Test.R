@@ -61,7 +61,7 @@ MED=function(lf){
       nc=round(nc1/2)
       clD=(order(dD,1:n))[1:(nc+1)]
       ru=c(.5,.5)
-      if(j==1){ru[2]=runif(1,.25,.75)}
+      if(j==1){ru[2]=0.45}#runif(1,.25,.75)}
       clD2=clD[-1][1:round(nc/2)]
       M1=(ru[1]*D[clD[-1],]+(1-ru[1])*rep(1,nc)%*%t(D[j,]))
       M2=(1+ru[2])*rep(1,round(nc/2))%*%t(D[j,])-ru[2]*D[clD2,]
@@ -136,7 +136,8 @@ augeucldist=function(CAND,exist){
   N1=dim(CAND)[1]
   N2=dim(exist)[1]
   DIST=matrix(0,nrow=N1,ncol=N2)
-  DIST=as.matrix(pdist(CAND,exist))
+  # DIST=as.matrix(pdist(CAND,exist))
+  DIST = test_fastpdist(CAND, exist)
   disCAND=as.matrix(dist(CAND))
   M=NULL
   for(i in 1:round(N1/2)){
@@ -161,7 +162,7 @@ LKfit=function(S,y){
   Rinv=solve(basis(dist.S)+10^(-6)*diag(N))
   coef=Rinv%*%y
   denom=Rinv%*%rep(1,N)
-  return(list(coef=coef,denom=denom,dbar=dbar))
+  return(list(coef=coef,denom=denom,dbar=dbar,Rinv=Rinv))
 }
 LKpredict=function(x,S,coef,denom,dbar){
   N=dim(S)[1]

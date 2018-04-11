@@ -73,13 +73,14 @@ List chooseMED(NumericMatrix Cand, // candidate points
 NumericMatrix augCandidate(NumericMatrix& AugMatrix, NumericMatrix& ExistMatrix)
 {
   int N1(AugMatrix.nrow());
-  int N2(ExistMatrix.nrow());
+  //int N2(ExistMatrix.nrow());
   NumericMatrix DistMat = fastpdist(AugMatrix, ExistMatrix);
   NumericMatrix DistAug = fastpdist(AugMatrix, AugMatrix);
   NumericMatrix res(round(N1 / 2.0), AugMatrix.ncol());
   int MaxIndex(0);
   for(int i = 0; i < round(N1 / 2.0); i++)
   {
+    //cout<<rowMin(DistMat)<<endl;
     MaxIndex = which_max(rowMin(DistMat));
     res(i, _) = AugMatrix(MaxIndex, _);
     AugMatrix = rowErase(AugMatrix, MaxIndex);
@@ -90,6 +91,77 @@ NumericMatrix augCandidate(NumericMatrix& AugMatrix, NumericMatrix& ExistMatrix)
     DistMat = cbind(DistMat, DistV);
   }
   return res;
+}
+
+class LKPredictor
+{
+public:
+  LKPredictor(){};
+  LKPredictor(NumericMatrix& DesignPoints, NumericVector& LfVector)
+  {
+    m_DesignPoints = clone(DesignPoints);
+    m_LfVector = clone(LfVector);
+    this->N = DesignPoints.nrow();
+    this->Dim = DesignPoints.ncol();
+  }
+  void setData(NumericMatrix& DesignPoints, NumericVector& LfVector)
+  {
+    m_DesignPoints = clone(DesignPoints);
+    m_LfVector = clone(LfVector);
+    this->N = DesignPoints.nrow();
+    this->Dim = DesignPoints.ncol();
+  }
+  void fit()
+  {
+    NumericMatrix res = fastpdist(this->m_DesignPoints, this->m_DesignPoints);
+    double quant = MaxTwo(1.0 - 5.0 * this->Dim / this->N, .5);
+    // fill diagnal
+    res.fill_diag(10.0 * this->Dim);
+    NumericVector tempVector = rowMin(res);
+    NumericVector quantVect = NumericVector::create(quant);
+    this->dbar = 2.0 * this->Dim * quant * quantileCPP(tempVector, quantVect)[0];
+    res.fill_diag(0.0);
+    int Xsize = res.ncol() * res.nrow();
+    for(int i = 0; i < Xsize; i++)
+    {
+      res[i] = 1.0 / (1.0 + (res[i] / this->dbar) * (res[i] / this->dbar));
+    }
+    res.fill_diag(1.0 + 1e-6);
+    cout<<dbar<<endl;
+    this->corMatrixInv = as<MapMatd> (res).inverse();
+    this->coef = this->corMatrixInv * as<MapVectd> (this->m_LfVector);
+    this->dnom = this->corMatrixInv.rowwise().sum();
+  }
+  List predictor(NumericVector& x)
+  {
+    NumericVector distVect = fastpdist2(this->m_DesignPoints, x);
+    for(int i = 0; i < distVect.size(); i++)
+    {
+      distVect[i] = 1.0 / (1.0 + (distVect[i] / this->dbar) * (distVect[i] / this->dbar));
+    }
+    MapVectd temp1(as<MapVectd> (distVect));
+    double mind = min(distVect);
+    double pred = (temp1.transpose() * this->coef)[0] / (temp1.transpose() * this->dnom)[0];
+    return List::create(_["mind"]=mind, _["pred"]=pred);
+  }
+public:
+  NumericMatrix m_DesignPoints;
+  NumericVector m_LfVector;
+private:
+  MatrixXd corMatrixInv;
+  VectorXd coef;
+  VectorXd dnom;
+  double dbar;
+  int N;
+  int Dim;
+};
+
+// [[Rcpp::export]]
+List LKpred(NumericVector& x, NumericMatrix& DesignPoints, NumericVector& LfVector)
+{
+  LKPredictor m_pred(DesignPoints, LfVector);
+  m_pred.fit();
+  return m_pred.predictor(x);
 }
 
 // [[Rcpp::export]]
@@ -114,6 +186,14 @@ List generateMEDPoints(int dim, NumericMatrix ExploreDesign, Function logFunc)
   /*
    *
    */
+  int ncl = ExploreDesign.nrow();
+  int nc = round(ncl / 2.0);
+  NumericMatrix AugMatrix;
+  NumericMatrix M1, M2, M0; // temp matrix
+  LKPredictor m_pred;
+  /*
+   *
+   */
   NumericVector q = NumericVector::create(0.9, 0.1);
   NumericVector q_vector(q.size());
   NumericVector lfD(m_MED[1]);
@@ -122,7 +202,19 @@ List generateMEDPoints(int dim, NumericMatrix ExploreDesign, Function logFunc)
   NumericMatrix pairwiseDist(DesignSize, DesignSize);
   NumericVector DistRowMin(DesignSize);
   NumericVector RadiusVect(DesignSize);
-  for(int loop_k = 2; loop_k <= K; loop_k++)
+  /*
+   * Definitions of variables
+   */
+  NumericVector InitialDistVect(InitialDesign.nrow());
+  NumericVector tempCol(InitialDesign.ncol());
+  NumericVector tempOrder;
+  NumericVector OrderCl(DesignSize);
+  NumericVector OrderClD(nc+1);
+  NumericVector OrderClD2(round(nc / 2.0));
+  NumericVector dD;
+  NumericVector ru = NumericVector::create(0.5, 0.5);
+  //
+  for(int loop_k = 2; loop_k <= 2; loop_k++)
   {
     gamma = (loop_k - 1.0) / (K - 1.0);
     SigmaK = (loop_k - 1.0) / loop_k * SigmaK;
@@ -139,19 +231,93 @@ List generateMEDPoints(int dim, NumericMatrix ExploreDesign, Function logFunc)
       RadiusVect[i] = pairwiseDist(i, orderCPP(pairwiseDist(i, _))[1] - 1);
     }
     // loop for adding MED
-    for(int j = 0; j < DesignSize; j++)
+    for(int j = 0; j < 1; j++)
     {
-      //TODO:
+      tempCol = MEDesign(j, _);
+      InitialDistVect = fastpdist2(InitialDesign, tempCol);
+      tempOrder = orderCPP(InitialDistVect);
+      OrderCl = head(tempOrder, DesignSize);
+      dD = pairwiseDist(j, _);
+      dD[j] = 0.0;
+      AugMatrix = RadiusVect[j] / sqrt(dim) * 2.0 * (ExploreDesign - 0.5);
+      for(int l = 0; l < AugMatrix.nrow(); l++)
+      {
+        AugMatrix(l, _) = tempCol + AugMatrix(l, _);
+      }
+      tempOrder = orderCPP(dD);
+      OrderClD = head(tempOrder, nc + 1);
+      if(j == 1)
+      {
+        ru[1] = 0.45;//runif(1, 0.25, 0.75)[0];
+      }
+      OrderClD2 = tail(head(OrderClD, round(nc / 2.0) + 1), round(nc / 2.0));
+      NumericVector tempRowID = tail(OrderClD, OrderClD.size() - 1) - 1;
+      M1 = ru[0] * subMatrixRows(MEDesign,  tempRowID);
+      for(int l = 0; l < M1.nrow(); l++)
+      {
+        M1(l, _) = M1(l, _) + (1 - ru[0]) * MEDesign(j, _);
+      }
+      tempRowID = OrderClD2 - 1;
+      M2 = subMatrixRows(MEDesign, tempRowID);
+      for(int l = 0; l < M2.nrow(); l++)
+      {
+        M2(l, _) = (1.0 + ru[1]) * MEDesign(j, _) - ru[1] * M2(l, _);
+      }
+      M0 = rbindM(M1, M2);
+      //first n initial design points nearest to MEDesign[j,]
+      tempRowID = OrderCl - 1;
+      NumericMatrix tempInitialDes = subMatrixRows(InitialDesign, tempRowID);
+      NumericVector tempInitialLfVect = subElements(LfVector, tempRowID);
+      NumericVector lBound = colMin(tempInitialDes);
+      NumericVector uBound = colMax(tempInitialDes);
+      lBound = lBound - (gamma - 1.0 / (K - 1)) * (uBound - lBound) / 6;
+      uBound = uBound + (gamma - 1.0 / (K - 1)) * (uBound - lBound) / 6;
+      for(int l = 0; l < dim; l++)
+      {
+        AugMatrix(_, l) = pmin(pmax(AugMatrix(_, l), lBound[l]), uBound[l]);
+      }
+      AugMatrix = rbindM(AugMatrix, M0);
+      AugMatrix = augCandidate(AugMatrix, tempInitialDes);
+      m_pred.setData(tempInitialDes, tempInitialLfVect);
+      m_pred.fit();
+      /*
+       * predictor on M matrix
+       */
+      NumericVector predVector(AugMatrix.nrow());
+      for(int l = 0; l < AugMatrix.nrow(); l++)
+      {
+        NumericVector tempAugRow = AugMatrix(l, _);
+        List predRes = m_pred.predictor(tempAugRow);
+        double mind = predRes[0];
+        double predVal = predRes[1];
+        double penalty(0.0);
+        if(mind < .1 / DesignSize)
+        {
+          penalty = log(mind);
+        }
+        else
+        {
+          penalty = 0.0;
+        }
+        if(j == 1)
+        {
+          predVector[l] = gamma * predVal + penalty;
+        }
+        else
+        {
+
+        }
+      }
     }
   }
 
 
   return List::create(_["Design"]=MEDesign, _["LfuncVec"]=lfD, _["PairWiseDist"]=pairwiseDist,
-                      _["Radius"]=RadiusVect);
+                      _["Radius"]=RadiusVect, _["InitialD"]=InitialDesign, _["debug"]=AugMatrix);
   //return List::create(_["Design"]=InitialDesign, _["LfuncVec"]=LfVector);
 }
 
 /***R
 x <- matrix(c(1, 2, 3, 4), nrow = 2)
-m_result = generateMEDPoints(2, x, lf)
+m_result = generateMEDPoints(2, D1, lf)
 */

@@ -136,9 +136,29 @@ NumericVector transVector(MatrixXd& SigmaMatrix, NumericVector& x)
 NumericVector rowMin(NumericMatrix& x)
 {
   NumericVector res(x.nrow());
-  for(int i = 0; i < x.ncol(); i++)
+  for(int i = 0; i < x.nrow(); i++)
   {
     res[i] = min(x(i, _));
+  }
+  return res;
+}
+
+NumericVector colMin(NumericMatrix& x)
+{
+  NumericVector res(x.ncol());
+  for(int i = 0; i < x.ncol(); i++)
+  {
+    res[i] = min(x(_, i));
+  }
+  return res;
+}
+
+NumericVector colMax(NumericMatrix& x)
+{
+  NumericVector res(x.ncol());
+  for(int i = 0; i < x.ncol(); i++)
+  {
+    res[i] = max(x(_, i));
   }
   return res;
 }
@@ -184,6 +204,28 @@ NumericMatrix rbindV(NumericMatrix& x, NumericVector& y)
   return res;
 }
 
+NumericMatrix rbindM(NumericMatrix& x, NumericMatrix& y)
+{
+  if(x.ncol() == 0)
+  {
+    return clone(y);
+  }
+  if(y.ncol() == 0)
+  {
+    return clone(x);
+  }
+  NumericMatrix res(x.nrow() + y.nrow(), x.ncol());
+  for(int i = 0; i < x.nrow(); i++)
+  {
+    res(i, _) = x(i, _);
+  }
+  for(int i = 0; i < y.nrow(); i++)
+  {
+    res(i + x.nrow(), _) = y(i, _);
+  }
+  return res;
+}
+
 /*
  * compute the pair-wise distance between two observations.
  */
@@ -203,8 +245,24 @@ NumericMatrix fastpdist(NumericMatrix& X, NumericMatrix& Y)
   for(int i = 0; i < n; i++)
   {
     Cn(i, _) = Cn(i, _) + Yn;
+    Cn(i, _) = pmax(Cn(i, _), 0.0);
   }
   return NumericMatrix(n, m, sqrt(Cn).begin());
+}
+
+NumericVector fastpdist2(NumericMatrix& X, NumericVector& Y)
+{
+  int n(X.nrow()),  k(X.ncol());
+  NumericMatrix tempX = NumericMatrix(n, k, (X * X).begin());
+  NumericVector tempY(clone(Y));
+  NumericVector Xn = rowSums(tempX);
+  double Yn = sum(tempY * tempY);
+  MatrixXd C = as<MapMatd> (X) * as<MapVectd> (Y);
+  NumericVector Cn = wrap(-2.0 * C);
+  Cn = Cn + Xn;
+  Cn = Cn + Yn;
+  Cn = pmax(Cn, 0.0);
+  return sqrt(Cn);
 }
 
 
@@ -330,12 +388,36 @@ NumericMatrix subMatrixCols(NumericMatrix& x, NumericVector& cols)
   return res;
 }
 
-IntegerVector orderCPP(NumericVector x) {
-  if (is_true(any(duplicated(x)))) {
-    Rf_warning("There are duplicates in 'x'; order not guaranteed to match that of R's base::order");
+
+NumericMatrix subMatrixRows(NumericMatrix& x, NumericVector& rows)
+{
+  NumericMatrix res(rows.size(), x.ncol());
+  for(int i = 0; i < rows.size(); i++)
+  {
+    res(i, _) = x(rows[i], _);
   }
-  NumericVector sorted = clone(x).sort();
-  return match(sorted, x);
+  return res;
+}
+
+NumericVector subElements(NumericVector& x, NumericVector& ElID)
+{
+  NumericVector res(ElID.size());
+  for(int i = 0; i < ElID.size(); i++)
+  {
+    res[i] = x[ElID[i]];
+  }
+  return res;
+}
+
+IntegerVector orderCPP(NumericVector x) {
+  // if (is_true(any(duplicated(x)))) {
+  //   Rf_warning("There are duplicates in 'x'; order not guaranteed to match that of R's base::order");
+  // }
+  // NumericVector sorted = clone(x).sort();
+  // return match(sorted, x);
+  Environment stats("package:base");
+  Function order = stats["order"];
+  return order(x);
 }
 
 
