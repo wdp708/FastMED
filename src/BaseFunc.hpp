@@ -193,6 +193,20 @@ NumericMatrix cbindV(NumericMatrix& x, NumericVector& y)
   return res;
 }
 
+NumericVector extendV(NumericVector& x, NumericVector& y)
+{
+  NumericVector res(x.size() + y.size(), 0.0);
+  for(int i = 0; i < x.size(); i++)
+  {
+    res[i] = x[i];
+  }
+  for(int i = x.size(); i < res.size(); i++)
+  {
+    res[i] = y[i - x.size()];
+  }
+  return res;
+}
+
 NumericMatrix rbindV(NumericMatrix& x, NumericVector& y)
 {
   NumericMatrix res(x.nrow() + 1, x.ncol());
